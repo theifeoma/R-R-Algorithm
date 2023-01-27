@@ -1,0 +1,125 @@
+#!/bin/bash
+time=0
+queue=()
+quanta=1
+pos=$#
+finished=()
+
+#testing for correct number of positional parameters
+if test $pos -ne 1
+then
+  echo "Incorrect number of parameters"
+  exit
+fi
+
+#testing if the file is a regular file
+if ! test -f $1
+then
+  echo "$1 is not a regular file or in the current directory"
+  exit
+fi
+
+#reading file and sorting into corresponding arrays
+while read -r plabel atime nuts
+do
+  processlabel+=("$plabel")
+  arrivaltime+=("$atime")
+  nut+=("$nuts")
+done < "$1"
+
+#print out header
+echo -e "\t ${processlabel[@]}" | tee -a outputfile.txt #output to file
+
+#number of processes
+n=${#arrivaltime[@]}
+
+#bool to return if all processes are done running
+function finishedprocesses () {
+  allDone=1
+  for(( p=0; p<$n; p++ ))
+  do
+    if [[ ${nut[p]} -gt 0 ]]
+    then
+      allDone=0
+    fi
+  done
+return $allDone
+}
+
+#loop through all processes
+while true
+do
+  # check if any process has arrived and add process to the queue
+  for (( j=0; j<$n; j++ ))
+  do
+    if [[ ${arrivaltime[$j]} -eq $time && ${nut[$j]} -gt 0 ]] 
+    then
+      queue+=(${processlabel[$j]})
+    fi
+  done
+
+status=""
+currentindex=-1
+
+# what happens in the queue
+for (( b=0; b<$n; b++ ))
+do
+  blocked="FR"
+  #initialize processes to their respective status
+
+  if [[ ${arrivaltime[$b]} -gt $time && ${nut[$b]} -gt 0 ]]
+  then
+    status="$status - "
+  elif [[ ${#queue[@]} -ne 0 && ${nut[$b]} -gt 0 ]] #checking for if any process is in the queue
+  then
+    if [[ ${processlabel[$b]} != ${queue[0]} ]]
+    then
+      status="$status W "
+  elif [[ ${processlabel[$b]} -eq ${queue[0]} && ${nut[$b]} -gt 0 ]]
+  then
+      status="$status R "
+      if [[ $quanta > ${nut[$b]} ]] #edge case to check if quanta is greater than current nut and set to zero
+      then
+          nut[b]=0
+      else
+          nut[b]=$((nut[b]-quanta))
+      fi
+      
+      currentindex=$b
+    fi
+  elif [[ ${arrivaltime[$b]} -le $time && ${nut[$b]} -eq 0 ]]
+  then
+      status="$status F "
+  fi
+done
+
+echo -e "$time \t$status" | tee -a outputfile.txt #output to file
+
+#remove process from front of queue and add to back
+
+if [[ ${nut[$currentindex]} -gt 0 ]]
+then
+  blocked=${queue[0]}
+  queue=(${queue[@]:1})
+  queue+=($blocked)
+else
+  queue=(${queue[@]:1}) #it is finished remove from queue
+fi
+
+finishedprocesses #function call
+done=$? 
+
+#print out exit status of the last process
+(( time=$time+1 ))
+if [[ $done -eq 1 ]]
+then
+   for (( s=0; s<$n; s++ ))
+   do
+    finished+=(" F")
+   done
+
+  echo -e "$time \t${finished[@]}" | tee -a outputfile.txt #output to file
+  exit
+  fi
+
+done
