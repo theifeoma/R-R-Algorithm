@@ -1,0 +1,34 @@
+Pseudo Code
+
+-Initialize variables
+-Test for the number of parameters
+
+
+-Test if parameter is a file
+-Read file and store in three different arrays
+-Define function to check if all processes are done running so that program can terminate.
+-Loop through program
+  -Loop through number of processes 
+    -Add to queue if arrival time = time
+  -Check if arrival time > time and nut > 0
+    -Status initialized to “not in system”
+  -Check if queue is not empty and nut of process is > 0
+    -Check if process is not in front of queue
+      -Status is set to waiting
+    -Check if process is in front of queue and nut of process > 0
+      -Status is set to running
+        -Check if quanta is greater than nut
+          -nut of process = 0
+          -else decrement nut by quanta value
+    -Check if arrival time is less than 0 and nut > 0
+      -Status is set to finished
+  -Print current time and corresponding status
+  -If current index of nut > 0
+    -Add process to back of queue
+    -Else remove from queue
+  -Check if all processes are finished
+  -Increment time
+  -If nut of all processes = 0
+    -Print time and “F” for all processes
+    -Exit program
+-Done
